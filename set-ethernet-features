@@ -1,0 +1,47 @@
+#!/bin/bash 
+
+set -eux
+
+
+get_pod_interfaces() {
+  local pod_regexp
+  local ifs
+  local pod_if
+  local pods_id
+
+  pod_regexp="${1}"
+  ifs=""
+
+  for pod_id in $(crictl pods | grep -E "${pod_regexp}" | awk '{print $1}'); do
+    pod_if=$(ip address | awk -F ' |@' "/${pod_id}/ {print \$2}")
+    ifs="${ifs} ${pod_if}"
+  done
+
+  echo "${ifs}"
+}
+
+SWITCH_ON_OFF="${1:-}"
+if [ "${SWITCH_ON_OFF}" != "on" ] && [ "${SWITCH_ON_OFF}" != "off" ]; then
+  echo "First parameter must be 'on' or 'off'"
+  exit 1
+fi
+
+# E.g.: "tcp-segmentation-offload generic-segmentation-offload generic-receive-offload tx-checksumming rx"
+if [ "${FEATURES:-}" == "" ]; then
+  echo "Must provide list of features"
+  exit 1
+fi
+
+INTERFACES=""
+if [ "${POD_REGEXP:-}" != "" ]; then
+  INTERFACES=$(get_pod_interfaces "${POD_REGEXP}")
+fi
+if [ "${HOST_INTERFACES:-}" != "" ]; then
+  INTERFACES="${INTERFACES} ${HOST_INTERFACES}"
+fi
+
+for interface in ${INTERFACES}; do 
+  for feature in ${FEATURES}; do 
+    ethtool -K "${interface}" "${feature}" ${SWITCH_ON_OFF}
+  done
+done
