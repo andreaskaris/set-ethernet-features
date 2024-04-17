@@ -21,15 +21,13 @@ if ! [ -f "${SCRIPT}" ]; then
     exit 1
 fi
 
-if [ $# -ne 4 ]; then
-    echo 'Usage: ./apply-machine-config.sh <ROLE> "POD_REGEXP" "HOST_INTERFACES" "FEATURES"'
+if [ $# -ne 2 ]; then
+    echo 'Usage: ./apply-machine-config.sh <ROLE> "FEATURES"'
     exit 1
 fi
 
 ROLE="${1}"
-POD_REGEXP="${2}"
-HOST_INTERFACES="${3}"
-FEATURES="${4}"
+FEATURES="${2}"
 
 mkdir -p "${OUTPUT_DIR}"
 OUTPUT_FILE="${OUTPUT_DIR}/${ROLE}.yaml"
@@ -57,8 +55,6 @@ spec:
       - contents: |
           [Service]
           Type=simple
-          Environment="POD_REGEXP=${POD_REGEXP}"
-          Environment="HOST_INTERFACES=${HOST_INTERFACES}"
           Environment="FEATURES=${FEATURES}"
           ExecStart=/usr/local/bin/${SCRIPT_NAME} off
         enabled: false

@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-set -eux
+set -x
 
 
 get_pod_interfaces() {
@@ -32,14 +32,7 @@ if [ "${FEATURES:-}" == "" ]; then
   exit 1
 fi
 
-INTERFACES=""
-if [ "${POD_REGEXP:-}" != "" ]; then
-  INTERFACES=$(get_pod_interfaces "${POD_REGEXP}")
-fi
-if [ "${HOST_INTERFACES:-}" != "" ]; then
-  INTERFACES="${INTERFACES} ${HOST_INTERFACES}"
-fi
-
+INTERFACES=$(ip --json link | jq -r '.[].ifname')
 for interface in ${INTERFACES}; do 
   for feature in ${FEATURES}; do 
     ethtool -K "${interface}" "${feature}" ${SWITCH_ON_OFF}
