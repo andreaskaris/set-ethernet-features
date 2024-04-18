@@ -2,24 +2,6 @@
 
 set -x
 
-
-get_pod_interfaces() {
-  local pod_regexp
-  local ifs
-  local pod_if
-  local pods_id
-
-  pod_regexp="${1}"
-  ifs=""
-
-  for pod_id in $(crictl pods | grep -E "${pod_regexp}" | awk '{print $1}'); do
-    pod_if=$(ip address | awk -F ' |@' "/${pod_id}/ {print \$2}")
-    ifs="${ifs} ${pod_if}"
-  done
-
-  echo "${ifs}"
-}
-
 SWITCH_ON_OFF="${1:-}"
 if [ "${SWITCH_ON_OFF}" != "on" ] && [ "${SWITCH_ON_OFF}" != "off" ]; then
   echo "First parameter must be 'on' or 'off'"
