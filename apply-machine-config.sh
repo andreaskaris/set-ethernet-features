@@ -5,11 +5,11 @@
 # A backup of the generated MachineConfiguration will be saved to the /tmp/enable-restricted-forwarding
 # directory.
 #
-# Usage: ./apply-machine-config.sh <ROLE> "POD_REGEXP" "HOST_INTERFACES" "FEATURES"
+# Usage: ./apply-machine-config.sh <ROLE> "FEATURES" "EXCLUDE_INTERFACES" "ONLY_INTERFACES"
 #
 # 2024-04-16, Andreas Karis <akaris@redhat.com>
 
-set -eu
+set -eux
 
 DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 SCRIPT_NAME="set-ethernet-features"
@@ -21,13 +21,14 @@ if ! [ -f "${SCRIPT}" ]; then
     exit 1
 fi
 
-if [ $# -ne 2 ]; then
-    echo 'Usage: ./apply-machine-config.sh <ROLE> "FEATURES"'
+if [ $# -lt 2 ]; then
+    echo 'Usage: ./apply-machine-config.sh <ROLE> <FEATURES> <POD_SELECTOR>'
     exit 1
 fi
 
 ROLE="${1}"
 FEATURES="${2}"
+POD_SELECTOR="${3:-}"
 
 mkdir -p "${OUTPUT_DIR}"
 OUTPUT_FILE="${OUTPUT_DIR}/${ROLE}.yaml"
@@ -56,6 +57,7 @@ spec:
           [Service]
           Type=simple
           Environment="FEATURES=${FEATURES}"
+          Environment="POD_SELECTOR=${POD_SELECTOR}"
           ExecStart=/usr/local/bin/${SCRIPT_NAME} off
         enabled: false
         name: ${SCRIPT_NAME}.service

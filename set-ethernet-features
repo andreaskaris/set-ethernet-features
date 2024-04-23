@@ -1,6 +1,6 @@
 #!/bin/bash 
 
-set -x
+set -eu
 
 SWITCH_ON_OFF="${1:-}"
 if [ "${SWITCH_ON_OFF}" != "on" ] && [ "${SWITCH_ON_OFF}" != "off" ]; then
@@ -14,9 +14,25 @@ if [ "${FEATURES:-}" == "" ]; then
   exit 1
 fi
 
-INTERFACES=$(ip --json link | jq -r '.[].ifname')
+get_interfaces() {
+  local pods
+  local pod_selector
+  pod_selector="${1}"
+
+  pods=$(crictl pods | awk "/${pod_selector}/ {print \$1}")
+  for p in ${pods}; do
+      ip a | awk -F ' |@' "/${p}/ {print \$2}"
+  done
+}
+
+INTERFACES=$(get_interfaces "${POD_SELECTOR:-}")
 for interface in ${INTERFACES}; do 
   for feature in ${FEATURES}; do 
-    ethtool -K "${interface}" "${feature}" ${SWITCH_ON_OFF}
+    on_or_off=$(ethtool -k "${interface}" | awk "/${feature}:/ {print \$2}")
+    if [ "${on_or_off}" != "${SWITCH_ON_OFF}" ]; then
+      cmd="ethtool -K "${interface}" "${feature}" ${SWITCH_ON_OFF}"
+      echo "Running: ${cmd}"
+      ${cmd}
+    fi
   done
 done
